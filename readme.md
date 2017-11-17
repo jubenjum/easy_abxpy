@@ -42,10 +42,10 @@ Scripts input parameters
 - prepare_abx.py: you will need the csv file and the name for your experiment (output file name),
   also you will need to include in the command line the columns that explain your data:
 
-	- col_features [required] : features, explanatory variable  
-	- col_labels [required] : label, response variable 
-	- col_items [optional]: the name of the experiment
-
+	- col_features [required] : columns numbers for the features, explanatory variable  
+	- col_labels [required] : columns numbers for the label, response variable 
+	- col_items [optional]: column numbers for the items, or the name of the experiment/speaker/sound
+	
 - run_abx.py: the input is the name of the experiment (output file name) 
   you used in prepare_abx.py
  
