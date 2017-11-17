@@ -13,12 +13,12 @@ system follow the instructions from https://conda.io/docs/user-guide/install/ind
 With conda installed in your system follow the commands 
 to install all packages used used by this package: 
 
->> conda create -n abx 
->> source activate abx
->> conda install -y pandas scipy numpy h5py pyparsing cython
->> conda install --file requirements.txt
->> pip install git+https://github.com/bootphon/h5features@82aeee8c3072f89276d99d7593a2f1c7a2f3719c
->> pip install git+https://github.com/bootphon/ABXpy@7ee2783ac3fea906c436391ccba74422157b3c28
+	conda create -n abx 
+	source activate abx
+	conda install -y pandas scipy numpy h5py pyparsing cython
+	conda install --file requirements.txt
+	pip install git+https://github.com/bootphon/h5features@82aeee8c3072f89276d99d7593a2f1c7a2f3719c
+	pip install git+https://github.com/bootphon/ABXpy@7ee2783ac3fea906c436391ccba74422157b3c28
 
 
 Run examples
