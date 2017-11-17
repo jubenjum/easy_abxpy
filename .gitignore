@@ -1,0 +1,8 @@
+*.features
+*.pyc
+*.item
+*.abx
+*.csv
+*.distance
+*.features
+*.score
