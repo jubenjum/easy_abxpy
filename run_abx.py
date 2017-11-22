@@ -51,7 +51,7 @@ def dtw_cosine_distance(x, y, normalized):
     return dtw.dtw(x, y, cosine.cosine_distance, normalized)
 
 
-def run_abx(data_file, on, across, by, distance=cosine_distance):
+def run_abx(data_file, on, across, by, njobs, distance=cosine_distance):
     ''' wrap ABXpy funcions and compute the scores '''
     item_file = '{}.item'.format(data_file)
     feature_file = '{}.features'.format(data_file)
@@ -68,24 +68,50 @@ def run_abx(data_file, on, across, by, distance=cosine_distance):
     task = ABXpy.task.Task(item_file, on, across=across, by=by)
     task.generate_triplets(taskfilename)
     distances.compute_distances(feature_file, '/features/', taskfilename,
-                                distance_file, distance, normalized=True, n_cpu=1)
+                                distance_file, distance, normalized=True, n_cpu=njobs)
     score.score(taskfilename, distance_file, scorefilename)
     analyze.analyze(taskfilename, scorefilename, analyzefilename)
 
 
-if __name__ == '__main__':
+def main():
     import argparse
 
     parser = argparse.ArgumentParser( prog='run_abx.py',
-        formatter_class=argparse.RawDescriptionHelpFormatter, description='compute ABX score')
+            formatter_class=argparse.RawDescriptionHelpFormatter, 
+            description='compute ABX score')
 
     parser.add_argument('abx_experiment_name', nargs=1, 
 	help='The experiment name, or the file name stripped the suffix')
     
     parser.add_argument('--on', required=True, help='on label "STRING"')
+    
     parser.add_argument('--across',  help='across feature "STRING"')
+    
     parser.add_argument('--by', help='by label "STRING"')
+    
+    parser.add_argument('-j', '--njobs', default=1, 
+            type=int, help='run ABXpy in j parallel jobs')
 
     args = parser.parse_args()
     abx_name = args.abx_experiment_name[0]
-    run_abx(abx_name, args.on, args.across, args.by)
+    run_abx(abx_name, args.on, args.across, args.by, args.njobs)
+
+
+if __name__ == '__main__':
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

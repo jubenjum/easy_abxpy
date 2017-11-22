@@ -149,7 +149,7 @@ def one2zero(a):
     return list(np.array() - 1 )
 
 
-if __name__ == '__main__':
+def main():
     import argparse
 
     parser = argparse.ArgumentParser( prog=sys.argv[0],
@@ -201,3 +201,58 @@ if __name__ == '__main__':
         df = pd.read_csv(input_csv, header=None)
 
     create_abx_files(df, options, output_name)
+
+
+if __name__ == '__main__':
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -2,7 +2,6 @@
 
 set -e
 
-
 source activate abx
 
 echo
