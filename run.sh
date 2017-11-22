@@ -5,12 +5,12 @@ set -e
 
 source activate abx
 
-#echo
-#echo "Running the calls comparision test"
-#echo
-#./prepare_abx.py tests/pca.csv SP4050BM --col_features 2-20 --col_labels 1
-#
-#./run_abx.py SP4050BM --on "call"
+echo
+echo "Running the calls comparision test"
+echo
+./prepare_abx.py tests/pca.csv SP4050BM --col_features 2-20 --col_labels 1
+
+./run_abx.py SP4050BM --on "call"
 
 
 echo
