@@ -158,7 +158,7 @@ def main():
 
     parser.add_argument('csv_file', help='input csv file')
 
-    parser.add_argument('output_name', help='input csv file')
+    parser.add_argument('output_name', help='experiment name, output file name of abx files')
     
     parser.add_argument('--col_items', help='columns with the file name or items, columns begins in 1')
 
