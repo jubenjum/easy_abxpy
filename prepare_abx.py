@@ -136,10 +136,13 @@ def parse_ranges(text):
         if isinstance(n, int): # single value
             selected_ranges.append(n)
         else: # range of values
-            if n.end <= n.start:
+            if n.end < n.start:
                 print("Error in ranges, they should be start<end")
                 raise 
-            selected_ranges += range(n.start, n.end+1)
+            if n.start == n.end:
+                selected_ranges.append(int(n.start))
+            else:
+                selected_ranges += range(n.start, n.end+1)
 
     return selected_ranges
 
