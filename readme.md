@@ -16,7 +16,7 @@ required by this package:
 	conda create -n abx 
 	source activate abx
 	conda install --file requirements.txt
-	pip install git+https://github.com/bootphon/h5features@82aeee8c3072f89276d99d7593a2f1c7a2f3719c
+	pip install git+https://github.com/bootphon/h5features
 	pip install git+https://github.com/bootphon/ABXpy
 
 
