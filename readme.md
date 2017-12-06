@@ -18,6 +18,7 @@ required by this package:
 	conda install --file requirements.txt
 	pip install git+https://github.com/bootphon/h5features
 	pip install git+https://github.com/bootphon/ABXpy
+	python setup.py install
 
 
 Running examples
