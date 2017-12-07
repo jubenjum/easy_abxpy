@@ -19,6 +19,7 @@ import ABXpy.misc.items as items
 import ABXpy.analyze as analyze
 
 import scipy.spatial.distance
+import sklearn.metrics.pairwise
 
 # This class override ABXpy.distances.distances.Features_Accessor
 # in order to avoid using the timestamps in the items/feature files
@@ -41,8 +42,12 @@ class Modified_Features_Accessor(ABXpy.distances.distances.Features_Accessor):
 ABXpy.distances.distances.Features_Accessor = Modified_Features_Accessor
 
 # /!\ ABXpy distance needs always a third argument !
+def cosine_similarity(x, y, normalized):
+    return sklearn.metrics.pairwise.cosine_similarity(x, y)
+
 def cosine_distance(x, y, normalized):
-    return scipy.spatial.distance.cosine(x, y)
+    return sklearn.metrics.pairwise.cosine_distances(x, y)
+    #return scipy.spatial.distance.cosine(x, y)
     
 def correlation_distance(x, y, normalized):
     return scipy.spatial.distance.correlation(x, y)
