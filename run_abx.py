@@ -46,8 +46,9 @@ def cosine_similarity(x, y, normalized):
     return sklearn.metrics.pairwise.cosine_similarity(x, y)
 
 def cosine_distance(x, y, normalized):
-    return sklearn.metrics.pairwise.cosine_distances(x, y)
-    #return scipy.spatial.distance.cosine(x, y)
+    #return sklearn.metrics.pairwise.cosine_distances(x, y)
+    #return cosine.cosine_distance(x, y)
+    return scipy.spatial.distance.cosine(x, y)
     
 def correlation_distance(x, y, normalized):
     return scipy.spatial.distance.correlation(x, y)
@@ -56,7 +57,7 @@ def dtw_cosine_distance(x, y, normalized):
     return dtw.dtw(x, y, cosine.cosine_distance, normalized)
 
 
-def run_abx(data_file, on, across, by, njobs, distance=cosine_distance):
+def run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_distance):
     ''' wrap ABXpy funcions and compute the scores '''
     item_file = '{}.item'.format(data_file)
     feature_file = '{}.features'.format(data_file)
@@ -71,7 +72,7 @@ def run_abx(data_file, on, across, by, njobs, distance=cosine_distance):
 
     # running the evaluation
     task = ABXpy.task.Task(item_file, on, across=across, by=by)
-    task.generate_triplets(taskfilename)
+    task.generate_triplets(taskfilename, tmpdir=tmpdir)
     distances.compute_distances(feature_file, '/features/', taskfilename,
                                 distance_file, distance, normalized=True, n_cpu=njobs)
     score.score(taskfilename, distance_file, scorefilename)
@@ -94,12 +95,14 @@ def main():
     
     parser.add_argument('--by', help='by label "STRING"')
     
+    parser.add_argument('--tmpdir', required=False, help='temporary directory "STRING"')
+    
     parser.add_argument('-j', '--njobs', default=1, 
             type=int, help='run ABXpy in j parallel jobs')
 
     args = parser.parse_args()
     abx_name = args.abx_experiment_name[0]
-    run_abx(abx_name, args.on, args.across, args.by, args.njobs)
+    run_abx(abx_name, args.on, args.across, args.by, args.tmpdir, args.njobs)
 
 
 if __name__ == '__main__':
