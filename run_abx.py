@@ -102,7 +102,7 @@ def main():
 
     args = parser.parse_args()
     abx_name = args.abx_experiment_name[0]
-    run_abx(abx_name, args.on, args.across, args.by, args.tmpdir, args.njobs)
+    run_abx(abx_name, args.on, args.across, args.by, args.njobs, args.tmpdir)
 
 
 if __name__ == '__main__':
