@@ -1,4 +1,6 @@
 easy_abx.egg-info
+record.txt
+outputdir
 *.features
 *.pyc
 *.item

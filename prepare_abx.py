@@ -16,7 +16,9 @@ import h5py
 
 def create_abx_files(df, options, output_name):
     """ it create item and feature files from a csv
-       
+    
+        df: pandas data that contains the in the first column the label
+
         options contains the fields:
         col_items: contain the indexes of columns with item values 
                    items are the experiment name, name of the pearson linked with

@@ -1,0 +1,22 @@
+package:
+  name: easy_abx 
+  version: "0.0.1"
+
+source:
+  path: . 
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+    - abxpy
+    - h5features
+    - h5py
+    - numpy 
+    - pandas
+    - pyparsing 
+    - scikit-learn 
+    - scipy
+

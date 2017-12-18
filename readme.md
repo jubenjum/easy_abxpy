@@ -10,15 +10,21 @@ Installing Packages
 Use conda to install all the required packages, if you don't have it in your 
 system follow the instructions on https://conda.io/docs/user-guide/install/index.html
 
-With conda installed in your system, follow the commands to install all packages 
-required by this package: 
+With conda installed in your system, follow the commands easy_abx package:
 
+
+## from the source 
+
+	conda config --add channels primatelang
 	conda create -n abx 
 	source activate abx
 	conda install --file requirements.txt
-	pip install git+https://github.com/bootphon/h5features
-	pip install git+https://github.com/bootphon/ABXpy
 	python setup.py install
+
+# from conda
+        conda create -n abx
+        source activate abx
+        conda install -c primatelang easy_abxpy
 
 
 Running examples
