@@ -39,7 +39,7 @@ I included two examples, both in the `tests` directory.
 
 - tests/items_020_corr.csv: from an auditory experiment 
 
-I included the script `run.sh` script that shows how does it work the pipeline:
+I included the script `bin/run.sh` script that shows how does it work the pipeline:
    
              csv -> csv convertion -> run abxpy
 
