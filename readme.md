@@ -1,4 +1,7 @@
 [![Build Status](https://travis-ci.org/primatelang/easy_abxpy.svg?branch=master)](https://travis-ci.org/primatelang/easy_abxpy)
+[![Anaconda-Server Badge](https://anaconda.org/primatelang/easy_abx/badges/installer/conda.svg)](https://conda.anaconda.org/primatelang)
+
+
 
 The objetive of the scripts in this directory is to convert
 from a csv file to item and features files required 
