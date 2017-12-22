@@ -253,6 +253,7 @@ def run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_dista
     score.score(taskfilename, distance_file, scorefilename)
     analyze.analyze(taskfilename, scorefilename, analyzefilename)
 
+
 def compute_abx(features, labels, on, across=None, by=None, njobs=1, distance=cosine_distance):
     ''' compute_abx computes the ABX task 
    
@@ -309,6 +310,7 @@ def compute_abx(features, labels, on, across=None, by=None, njobs=1, distance=co
     taskfilename = '{}.abx'.format(data_file)
     analyzefilename = '{}.csv'.format(data_file)
     remove_files = [distance_file, scorefilename, taskfilename, analyzefilename]
+    remove_files += [item_file, feature_file]
     map(os.remove, filter(os.path.exists, remove_files))
 
     return abx_scores
