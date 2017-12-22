@@ -148,7 +148,7 @@ def parse_ranges(text):
     [1]
 
     >>> parse_ranges('2,2,3')
-    [1, 2, 3]
+    [2, 2, 3]
 
     >>> parse_ranges('3,0-4')
     [3, 0, 1, 2, 3, 4]
@@ -312,3 +312,9 @@ def compute_abx(features, labels, on, across=None, by=None, njobs=1, distance=co
     map(os.remove, filter(os.path.exists, remove_files))
 
     return abx_scores
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+
