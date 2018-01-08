@@ -54,12 +54,25 @@ def main():
     options.col_labels = ranges(args.col_labels) if args.col_labels else None
     options.col_features = ranges(args.col_features[0]) if args.col_features else None
     options.header = args.header
-    
+   
+    is_matrix = True
     if options.header:
-        df = pd.read_csv(input_csv)
+        try:
+            df = pd.read_csv(input_csv)
+        except pd.errors.ParserError:
+            is_matrix = False
+            
     else:
-        df = pd.read_csv(input_csv, header=None)
-
+        try:
+            df = pd.read_csv(input_csv, header=None)
+        except pd.errors.ParserError:
+            is_matrix = False
+    
+    if not is_matrix:
+        print('ABX score is computed from fixed length features' +
+                ': {} has mixed lengths'.format(input_csv))  
+        sys.exit()
+    
     create_abx_files(df, options, output_name)
 
 
