@@ -22,13 +22,16 @@ setup(
     author='Juan Benjumea, Ewan Dumbar',
     url='https://github.com/primatelang/easy_abxpy',
 
-    #packages=['easy_abx'],
+    packages=['easy_abx'],
     #package_dir={'': 'src'},
 
     include_package_data=True,
     install_requires=requirements,
     dependency_links=dependency_links,
 
+
+    license="GPLv3",
+    zip_safe=False,
 
     entry_points = {'console_scripts': 
          ['prepare_abx = easy_abx.prepare_abx:main', 
