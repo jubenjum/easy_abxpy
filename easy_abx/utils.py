@@ -13,7 +13,7 @@ import string
 import random
 from collections import namedtuple
 
-
+from joblib import Memory
 import pandas as pd
 import numpy as np
 import scipy.spatial.distance
@@ -21,9 +21,8 @@ import sklearn.metrics.pairwise
 from pyparsing import Word, nums, Suppress, Literal, Group, delimitedList
 import h5py
 
-
 import ABXpy.task
-import ABXpy.distances.distances  
+import ABXpy.distances.distances
 import ABXpy.distances.distances as distances
 import ABXpy.distances.metrics.cosine as cosine
 import ABXpy.distances.metrics.dtw as dtw
@@ -32,30 +31,51 @@ import ABXpy.misc.items as items
 import ABXpy.analyze as analyze
 
 
-__all__ = ['create_abx_files', 'parse_ranges']  
+__all__ = ['create_abx_files', 'parse_ranges']
 __all__ += ['cosine_distance', 'compute_abx']
+__all__ += ['get_cache_dir', 'build_cache']
+
+
+
+# creating a global memory for the package in the directory where the scripts are running
+def get_cache_dir():
+    ''' get the directory where the cache is stored, by default it will create a
+    directory ".cache" in the current directory
+    '''
+    cdir = os.curdir+'/.cache'
+    if not os.path.exists(cdir):
+        os.makedirs(cdir)
+
+    return cdir
+
+
+def build_cache():
+    return Memory(cachedir=get_cache_dir(), verbose=0)
+
+
+memory = build_cache()
 
 
 def create_abx_files(df, options, output_name):
     """ it create item and feature files used by ABXpy from a csv files
-   
+
         Parameters
         ----------
 
-        df :  
+        df :
             pandas dataframe with labels in the first label
-        
-        options : 
+
+        options :
             a namedtuple that contains the fields
-            col_items - contain the indexes of columns with item values 
+            col_items - contain the indexes of columns with item values
                         items are the experiment name, name of the pearson linked with
                         a response, etc (alphanumeric)
-            col_coords -  the position in the file where the features are extracted (numeric, optional) 
-            col_labels - the label for the feature or response or experiment (alphanumeric) 
+            col_coords -  the position in the file where the features are extracted (numeric, optional)
+            col_labels - the label for the feature or response or experiment (alphanumeric)
             col_features - contain the features or responses (numerical)
 
-        output_name : 
-            file name of the item (text) an feature files (h5) 
+        output_name :
+            file name of the item (text) an feature files (h5)
 
         Returns
         -------
@@ -64,7 +84,7 @@ def create_abx_files(df, options, output_name):
 
 
     """
-  
+
     # input files for abx ...
     item_file = '{}.item'.format(output_name)
     features_file = '{}.features'.format(output_name)
@@ -81,67 +101,78 @@ def create_abx_files(df, options, output_name):
             for item in items:
                 join_item = '_'.join(['{}'.format(x) for x in item])
                 joined_items.append(join_item)
-                
+
         else:
-            joined_items = ['{}'.format(x) for x in items] 
+            joined_items = ['{}'.format(x) for x in items]
 
     # extracting the labels, in abx are the interval times linked
-    # to the sound file, however in experiments without these it can 
-    # be fill with random values 
+    # to the sound file, however in experiments without these it can
+    # be fill with random values
     times = []
     if options.col_coords is None:
         coords = [np.random.rand(2,1) for _ in range(num_exp)]
     else:
         coords = df.iloc[:,options.col_coords].values
-    
-    # extracting the labels, in this case I use the machine learning definition 
+
+    # extracting the labels, in this case I use the machine learning definition
     # of labeling (tags)
-    labels = df.iloc[:,options.col_labels].values  
+    labels = df.iloc[:,options.col_labels].values
 
     # extracting the features
     features = df.iloc[:,options.col_features].values.astype(np.float64)
 
     # indexes links the features with the items (items <- indexes -> features)
     # index(es) are linked one to one with item in items, and the number in
-    # the value of index is the first position in the features for the given item 
+    # the value of index is the first position in the features for the given item
     index = np.arange(start=0, stop=num_exp) # if features are flat, one row for one item
 
     ### generating the features file
-    f = h5py.File(features_file, "w")
-    group = f.create_group("features")
-    group.attrs['version'] = '1.1'
-    group.attrs['format'] = 'dense'
-    features_ = group.create_dataset("/features/features/", data=features)
-    index_ = group.create_dataset("/features/index/", data=index)
-    items_ = group.create_dataset("/features/items/", data=joined_items) 
-    labels_ = group.create_dataset("/features/labels/", data=coords) 
+    @memory.cache
+    def gen_feature_file(features_file, f=features, i=index, j=joined_items, c=coords):
+        f = h5py.File(features_file, "w")
+        group = f.create_group("features")
+        group.attrs['version'] = '1.1'
+        group.attrs['format'] = 'dense'
+        features_ = group.create_dataset("/features/features/", data=f)
+        index_ = group.create_dataset("/features/index/", data=i)
+        items_ = group.create_dataset("/features/items/", data=j)
+        labels_ = group.create_dataset("/features/labels/", data=c)
+        return f
+
+    f = gen_feature_file(features_file, features, index, joined_items, coords)
     f.close()
 
     ### generate the item file
-    with open(item_file, 'w') as ifile:
-        if options.header:
-            header = list(df.columns[[options.col_labels]]) 
-            left = "#file onset offset #" # ? always the same 
+    @memory.cache
+    def gen_item_file(df, o=options, l=labels, j=joined_items, c=coords, n=num_labels):
+        if o.header:
+            header = list(df.columns[[o.col_labels]])
+            left = "#file onset offset #" # ? always the same
             right = " ".join(["{}".format(x) for x in header])
-            item_header = left + right + "\n" 
+            item_header = left + right + "\n"
 
         else:
-            num_labels = len(labels[0])
-            item_header = "#file onset offset #" + "call"*num_labels + "\n"
-        
-        ifile.write(item_header)
-        
-        for join_item, coord, label in zip(joined_items, coords, labels):
+            num_labels = len(l[0])
+            item_header = "#file onset offset #" + "call"*n + "\n"
+
+        t = ''
+        for join_item, coord, label in zip(j, c, l):
             joined_labels = ' '.join(['{}'.format(x) for x in label])
             joined_coords = ' '.join(['{}'.format(x[0]) for x in coord])
-            t = '{} {} {}\n'.format(join_item, joined_coords, joined_labels)
-            ifile.write(t)
+            t += '{} {} {}\n'.format(join_item, j, joined_labels)
+
+        return item_header, item_elem
+
+
+    with open(item_file, 'w') as ifile:
+        header, item_elem = gen_item_file(df, options.header, labels, joined_items, coords)
+        ifile.write(item_header)
 
 
 def parse_ranges(text):
     """parse simple numeric range expression
-    
-    It allows to trasform ranges to python list. The input range is a string, 
+
+    It allows to trasform ranges to python list. The input range is a string,
     and it will return the a list filled with integers in a range, for example
 
     >>> parse_ranges('1')
@@ -152,19 +183,19 @@ def parse_ranges(text):
 
     >>> parse_ranges('3,0-4')
     [3, 0, 1, 2, 3, 4]
-    
+
     """
-    
+
     if not text:
         return []
 
     # single integer value
     number = Word(nums).setParseAction(lambda t: int(t[0]))
-    
+
     # range values
     ran_sep = Suppress(Literal('-'))
     num_range = Group(number("start") + ran_sep + number("end"))
-    
+
     # grammar + decode
     expr = num_range | number
     exprGramm = delimitedList(expr)
@@ -177,7 +208,7 @@ def parse_ranges(text):
         else: # range of values
             if n.end < n.start:
                 print("Error in ranges, they should be start<end")
-                raise 
+                raise
             if n.start == n.end:
                 selected_ranges.append(int(n.start))
             else:
@@ -194,6 +225,7 @@ def one2zero(a):
 # from https://goo.gl/REx446
 def __id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
+
 
 # FIXME : change this monkey patching!
 # This class override ABXpy.distances.distances.Features_Accessor
@@ -224,7 +256,7 @@ def cosine_distance(x, y, normalized):
     #return sklearn.metrics.pairwise.cosine_distances(x, y)
     #return cosine.cosine_distance(x, y)
     return scipy.spatial.distance.cosine(x, y)
-    
+
 def correlation_distance(x, y, normalized):
     return scipy.spatial.distance.correlation(x, y)
 
@@ -254,30 +286,31 @@ def run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_dista
     analyze.analyze(taskfilename, scorefilename, analyzefilename)
 
 
-def compute_abx(features, labels, on, across=None, by=None, njobs=1, distance=cosine_distance):
-    ''' compute_abx computes the ABX task 
-   
+@memory.cache
+def compute_abx(features, labels, on, across=None, by=None, njobs=1, distance=cosine_distance, tmpdir=None):
+    ''' compute_abx computes the ABX task
+
     Parameters
     ----------
 
-    features : 
-    
-    labels : 
-    
-    on :  
-    
-    across : [default=None] 
-    
+    features :
+
+    labels :
+
+    on :
+
+    across : [default=None]
+
     by : [default=None]
-    
-    njobs : [default=1] 
-    
+
+    njobs : [default=1]
+
     distance : [default=cosine_distance]
 
     Returns
     -------
     abx_scores
-    
+
     '''
 
     # create intermediate files
@@ -285,21 +318,21 @@ def compute_abx(features, labels, on, across=None, by=None, njobs=1, distance=co
     _, num_labels = new_labels.shape
     new_features = np.array(features, dtype=np.float64)
     _, num_features = new_features.shape
-    df = pd.DataFrame(np.hstack((new_labels, new_features))) 
-   
+    df = pd.DataFrame(np.hstack((new_labels, new_features)))
+
     # conf
     cmd_options = ['col_items', 'col_coords', 'col_labels', 'col_features', 'no_header']
     options = namedtuple('options', cmd_options)
-    options.col_items = None  
-    options.col_coords = None 
-    options.col_labels = range(num_labels) 
+    options.col_items = None
+    options.col_coords = None
+    options.col_labels = range(num_labels)
     options.col_features = range(num_labels, num_features + num_labels)
     options.header = False
     data_file = __id_generator()
-   
+
     # running abx
     create_abx_files(df, options, data_file)
-    run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=distance)
+    run_abx(data_file, on, across, by, njobs, tmpdir=tmpdir, distance=distance)
     abx_scores = pd.read_csv('{}.csv'.format(data_file), sep='\t')
 
     # cleaning
@@ -319,4 +352,3 @@ def compute_abx(features, labels, on, across=None, by=None, njobs=1, distance=co
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
