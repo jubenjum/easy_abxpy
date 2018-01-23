@@ -8,21 +8,21 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser( prog='run_abx.py',
-            formatter_class=argparse.RawDescriptionHelpFormatter, 
+            formatter_class=argparse.RawDescriptionHelpFormatter,
             description='compute ABX score')
 
-    parser.add_argument('abx_experiment_name', nargs=1, 
+    parser.add_argument('abx_experiment_name', nargs=1,
 	help='The experiment name, or the file name stripped the suffix')
-    
+
     parser.add_argument('--on', required=True, help='on label "STRING"')
-    
+
     parser.add_argument('--across',  help='across feature "STRING"')
-    
+
     parser.add_argument('--by', help='by label "STRING"')
-    
+
     parser.add_argument('--tmpdir', required=False, help='temporary directory "STRING"')
-    
-    parser.add_argument('-j', '--njobs', default=1, 
+
+    parser.add_argument('-j', '--njobs', default=1,
             type=int, help='run ABXpy in j parallel jobs')
 
     args = parser.parse_args()

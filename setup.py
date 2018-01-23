@@ -15,7 +15,7 @@ dependency_links = [  ]
 
 setup(
     name='easy_abx',
-    version='0.1.0',
+    version='0.2.0',
     description='tools to build item/feature files and run it',
     long_description=readme + '\n\n',
     
