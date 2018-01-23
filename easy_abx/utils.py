@@ -353,18 +353,14 @@ def run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_dista
     except:
         raise ValueError('cannot compute hash_items_features')
 
-    print('--> {} <--'.format(hash_items_features))
-
-
     # I read the results from the cache, if it does't exit it will run the function and update
     # the cache, but it that data exist then it will get those scores from the cache. I am checking
     # also if the result file exist, if not it will be created from the data in the cache
 
     abx_mem_results = memorizable_abx.call_and_shelve(data_file, on, across, by, njobs, tmpdir, distance, hash_items_features)
     analyzefilename = '{}.csv'.format(data_file)
-    if not os.path.isfile(analyzefilename): # at least this file should exit!
-        with open(analyzefilename, 'w') as abx_scores_file:
-            abx_scores_file.write(abx_mem_results.get())
+    with open(analyzefilename, 'w') as abx_scores_file:
+        abx_scores_file.write(abx_mem_results.get())
 
     return abx_mem_results.get()
 
