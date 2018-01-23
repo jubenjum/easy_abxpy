@@ -198,13 +198,13 @@ def create_abx_files(df, options, output_name):
     mm = memerized_create_abx_files.call_and_shelve
     abx_mem_files = mm(df, set_header, col_items, col_coords, col_labels, col_features, output_name)
 
+    # save the item and features files that are keep in the cache
     item_file = '{}.item'.format(output_name)
     features_file = '{}.features'.format(output_name)
-    if not os.path.isfile(item_file) or not os.path.isfile(features_file):
-        item_data, features_data = abx_mem_files.get()
-        with open(item_file, 'w') as ifile, open(features_file, 'wb') as ffile:
-            ifile.write(item_data)
-            ffile.write(features_data)
+    item_data, features_data = abx_mem_files.get()
+    with open(item_file, 'w') as ifile, open(features_file, 'wb') as ffile:
+        ifile.write(item_data)
+        ffile.write(features_data)
 
 def parse_ranges(text):
     """parse simple numeric range expression
