@@ -4,20 +4,16 @@
 
 import os
 import sys
-import os.path
-import sys
-package_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-if not(package_path in sys.path):
-    sys.path.append(package_path)
 import string
 import random
 import hashlib
+import os.path
 from collections import namedtuple
+from threading import Lock
 
 from joblib import Memory
 import pandas as pd
 import numpy as np
-np.random.seed(1)
 
 import scipy.spatial.distance
 import sklearn.metrics.pairwise
@@ -38,9 +34,14 @@ __all__ = ['create_abx_files', 'parse_ranges']
 __all__ += ['cosine_distance', 'compute_abx']
 __all__ += ['get_cache_dir', 'build_cache']
 
+# Module configuration
+np.random.seed(1)
+package_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+if not(package_path in sys.path):
+    sys.path.append(package_path)
 
 
-# creating a global memory for the package in the directory where the scripts are running
+# creating a global cache to store intermediate resutls
 def get_cache_dir():
     ''' get the directory where the cache is stored, by default it will create a
     directory ".cache" in the current directory
@@ -57,22 +58,26 @@ def build_cache():
 
 memory = build_cache()
 
+
 @memory.cache
-def memerized_create_abx_files(df, set_header, col_items, col_coords, col_labels, col_features, output_name):
+def memerized_create_abx_files(df, set_header, col_items, col_coords,
+                               col_labels, col_features, output_name):
     """ it create item and feature files used by ABXpy from a csv files
 
         Parameters
         ----------
-        df : pandas dataframe with labels in the first label
+        df : pandas dataframe with labels in the first row and features
+             from the second column ...
         set_header : Bool for writing the header in the ABXpy items file
         col_items : contain the indexes of columns with item values
-                    items are the experiment name, name of the pearson linked with
-                    a response, etc (alphanumeric)
-        col_coords :  the position in the file where the features are extracted (numeric, optional)
-        col_labels : the label for the feature or response or experiment (alphanumeric)
+                    items are the experiment name, name of the pearson linked
+                    with a response, etc (alphanumeric)
+        col_coords : the position in the file where the features are
+                     extracted (numeric, optional)
+        col_labels : the label for the feature or response or experiment
+                     (alphanumeric)
         col_features : contain the features or responses (numerical)
-        output_name :
-            file name of the item (text) an feature files (h5)
+        output_name : file name of the item (text) an feature files (h5)
 
         Returns
         -------
@@ -89,10 +94,10 @@ def memerized_create_abx_files(df, set_header, col_items, col_coords, col_labels
 
     # extracting the file names (items) from csv
     joined_items = []
-    if col_items is None: # mock the item/filename if not given
+    if col_items is None:  # mock the item/filename if not given
         joined_items = ['item_{:04d}'.format(x) for x in range(1, num_exp+1)]
     else:
-        items = df.iloc[:,col_items].values
+        items = df.iloc[:, col_items].values
         if len(items) > 1:
             for item in items:
                 join_item = '_'.join(['{}'.format(x) for x in item])
@@ -104,40 +109,42 @@ def memerized_create_abx_files(df, set_header, col_items, col_coords, col_labels
     # extracting the labels, in abx are the interval times linked
     # to the sound file, however in experiments without these it can
     # be fill with random values
-    times = []
     if col_coords is None:
-        coords = [np.random.rand(2,1) for _ in range(num_exp)]
+        coords = [np.random.rand(2, 1) for _ in range(num_exp)]
     else:
-        coords = df.iloc[:,col_coords].values
+        coords = df.iloc[:, col_coords].values
 
     # extracting the labels, in this case I use the machine learning definition
     # of labeling (tags)
-    labels = df.iloc[:,col_labels].values
+    labels = df.iloc[:, col_labels].values
 
     # extracting the features
-    features = df.iloc[:,col_features].values.astype(np.float64)
+    features = df.iloc[:, col_features].values.astype(np.float64)
 
     # indexes links the features with the items (items <- indexes -> features)
     # index(es) are linked one to one with item in items, and the number in
     # the value of index is the first position in the features for the given item
-    index = np.arange(start=0, stop=num_exp) # if features are flat, one row for one item
 
-    ### generating the features file
+    # if features are flat, one row for one item in the index
+    index = np.arange(start=0, stop=num_exp)
+
+    # generating the features file
     f = h5py.File(features_file, "w")
     group = f.create_group("features")
     group.attrs['version'] = '1.1'
     group.attrs['format'] = 'dense'
-    features_ = group.create_dataset("/features/features/", data=features)
-    index_ = group.create_dataset("/features/index/", data=index)
-    items_ = group.create_dataset("/features/items/", data=joined_items)
-    labels_ = group.create_dataset("/features/labels/", data=coords)
+
+    group.create_dataset("/features/features/", data=features)
+    group.create_dataset("/features/index/", data=index)
+    group.create_dataset("/features/items/", data=joined_items)
+    group.create_dataset("/features/labels/", data=coords)
     f.close()
 
-    ### generate the item file
+    # generate the item file
     with open(item_file, 'w') as ifile:
         if set_header:
             header = list(df.columns[[col_labels]])
-            left = "#file onset offset #" # ? always the same
+            left = "#file onset offset #"  # ? always the same
             right = " ".join(["{}".format(x) for x in header])
             item_header = left + right + "\n"
 
@@ -171,10 +178,12 @@ def create_abx_files(df, options, output_name):
         options :
             a namedtuple that contains the fields
             col_items - contain the indexes of columns with item values
-                        items are the experiment name, name of the pearson linked with
-                        a response, etc (alphanumeric)
-            col_coords -  the position in the file where the features are extracted (numeric, optional)
-            col_labels - the label for the feature or response or experiment (alphanumeric)
+                        items are the experiment name, name of the pearson
+                        linked with a response, etc (alphanumeric)
+            col_coords - the position in the file where the features are
+                         extracted (numeric, optional)
+            col_labels - the label for the feature or response or
+                         experiment (alphanumeric)
             col_features - contain the features or responses (numerical)
 
         output_name :
@@ -192,11 +201,12 @@ def create_abx_files(df, options, output_name):
     col_items = options.col_items
     col_coords = options.col_coords
     col_labels = options.col_labels
-    col_features= options.col_features
+    col_features = options.col_features
 
-    #mm = memerized_create_abx_files.call_and_shelve
+    # mm = memerized_create_abx_files.call_and_shelve
     mm = memerized_create_abx_files.call_and_shelve
-    abx_mem_files = mm(df, set_header, col_items, col_coords, col_labels, col_features, output_name)
+    abx_mem_files = mm(df, set_header, col_items, col_coords, col_labels,
+                       col_features, output_name)
 
     # save the item and features files that are keep in the cache
     item_file = '{}.item'.format(output_name)
@@ -205,6 +215,7 @@ def create_abx_files(df, options, output_name):
     with open(item_file, 'w') as ifile, open(features_file, 'wb') as ffile:
         ifile.write(item_data)
         ffile.write(features_data)
+
 
 def parse_ranges(text):
     """parse simple numeric range expression
@@ -240,9 +251,9 @@ def parse_ranges(text):
 
     selected_ranges = []
     for n in decoded_text:
-        if isinstance(n, int): # single value
+        if isinstance(n, int):  # single value
             selected_ranges.append(n)
-        else: # range of values
+        else:  # range of values
             if n.end < n.start:
                 print("Error in ranges, they should be start<end")
                 raise
@@ -256,7 +267,7 @@ def parse_ranges(text):
 
 def one2zero(a):
     """removes one to  """
-    return list(np.array() - 1 )
+    return list(np.array() - 1)
 
 
 # from https://goo.gl/REx446
@@ -277,32 +288,40 @@ class Modified_Features_Accessor(ABXpy.distances.distances.Features_Accessor):
         features = {}
         for ix, f, on, off in zip(items.index, items['file'],
                                   items['onset'], items['offset']):
-            f=str(f)
-            #t = np.where(np.logical_and(self.times[f] >= on,
+            f = str(f)
+            # t = np.where(np.logical_and(self.times[f] >= on,
             #                            self.times[f] <= off))[0]
-            features[ix] = self.features[f]#[t, :]
+            features[ix] = self.features[f]  # [t, :]
         return features
 
+
 ABXpy.distances.distances.Features_Accessor = Modified_Features_Accessor
+
 
 # /!\ ABXpy distance needs always a third argument !
 def cosine_similarity(x, y, normalized):
     return sklearn.metrics.pairwise.cosine_similarity(x, y)
 
+
 def cosine_distance(x, y, normalized):
-    #return sklearn.metrics.pairwise.cosine_distances(x, y)
-    #return cosine.cosine_distance(x, y)
+    # return sklearn.metrics.pairwise.cosine_distances(x, y)
+    # return cosine.cosine_distance(x, y)
     return scipy.spatial.distance.cosine(x, y)
+
 
 def correlation_distance(x, y, normalized):
     return scipy.spatial.distance.correlation(x, y)
+
 
 def dtw_cosine_distance(x, y, normalized):
     return dtw.dtw(x, y, cosine.cosine_distance, normalized)
 
 
+# FIXME 1 : njobs different than 1 it crashes ABXpy/distance.py
+# FIXED 1 : on a new version of ABXpy/distance.py
 @memory.cache
-def memorizable_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_distance, item_features_hash='0'):
+def memorizable_abx(data_file, on, across, by, njobs, tmpdir=None,
+                    distance=cosine_distance, item_features_hash='0'):
     ''' wrap ABXpy funcions and compute the scores
     '''
     item_file = '{}.item'.format(data_file)
@@ -311,23 +330,32 @@ def memorizable_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosi
         raise ValueError('item_file or feature_file doesnt exist')
 
     distance_file = '{}.distance'.format(data_file)
-    scorefilename = '{}.score'.format(data_file)
-    taskfilename = '{}.abx'.format(data_file)
-    analyzefilename = '{}.csv'.format(data_file)
+    score_file = '{}.score'.format(data_file)
+    task_file = '{}.abx'.format(data_file)
+    analyze_file = '{}.csv'.format(data_file)
 
     # clean up before compute ABX
-    remove_files = [distance_file, scorefilename, taskfilename, analyzefilename]
+    remove_files = [distance_file,
+                    score_file,
+                    task_file,
+                    analyze_file]
     map(os.remove, filter(os.path.exists, remove_files))
 
     # running the evaluation
     task = ABXpy.task.Task(item_file, on, across=across, by=by, verbose=False)
-    task.generate_triplets(taskfilename, tmpdir=tmpdir)
-    distances.compute_distances(feature_file, '/features/', taskfilename,
-                                distance_file, distance, normalized=True, n_cpu=njobs)
-    score.score(taskfilename, distance_file, scorefilename)
-    analyze.analyze(taskfilename, scorefilename, analyzefilename)
+    task.generate_triplets(task_file, tmpdir=tmpdir)
+    distances.compute_distances(feature_file, '/features/', task_file,
+                                distance_file, distance, normalized=True,
+                                n_cpu=njobs)
+    score.score(task_file, distance_file, score_file)
+    analyze.analyze(task_file, score_file, analyze_file)
 
-    return open(analyzefilename).read()
+    # I will keep only the ABX scores
+    remove_files = [distance_file, score_file, task_file]
+    map(os.remove, filter(os.path.exists, remove_files))
+
+    analyze_data = open(analyze_file, 'r').read()
+    return analyze_data
 
 
 # https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
@@ -345,27 +373,31 @@ def run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_dista
     it should exist two files: {data_file}.features and {data_file}.items
     '''
 
-    # the checksum is used check different versions stored in a file with the same name ...
+    # the checksum is used find diff data within the same same file name ...
     item_file = '{}.item'.format(data_file)
     feature_file = '{}.features'.format(data_file)
     try:
-        hash_items_features = md5(item_file) + md5(feature_file)
+        abx_id = md5(item_file) + md5(feature_file)
+
     except:
         raise ValueError('cannot compute hash_items_features')
 
-    # I read the results from the cache, if it does't exit it will run the function and update
-    # the cache, but it that data exist then it will get those scores from the cache. I am checking
-    # also if the result file exist, if not it will be created from the data in the cache
+    # I read the results from the cache, if it does't exit it will run the
+    # function and update the cache, but it that data exist then it will get
+    # those scores from the cache. I am checking also if the result file exist,
+    # if not it will be created from the data in the cache
 
-    abx_mem_results = memorizable_abx.call_and_shelve(data_file, on, across, by, njobs, tmpdir, distance, hash_items_features)
-    analyzefilename = '{}.csv'.format(data_file)
-    with open(analyzefilename, 'w') as abx_scores_file:
-        abx_scores_file.write(abx_mem_results.get())
+    analyze_data =  memorizable_abx(data_file, on, across, by, njobs, tmpdir, distance, abx_id)
+    analyze_file = '{}.csv'.format(data_file)
+    with open(analyze_file, 'w') as afile:
+        afile.write(analyze_data)
 
-    return abx_mem_results.get()
+    return analyze_data
+
 
 @memory.cache
-def compute_abx(features, labels, on, across=None, by=None, njobs=1, distance=cosine_distance, tmpdir=None):
+def compute_abx(features, labels, on, across=None, by=None, njobs=1,
+                distance=cosine_distance, tmpdir=None):
     ''' compute_abx computes the ABX task
 
     Parameters
@@ -417,10 +449,10 @@ def compute_abx(features, labels, on, across=None, by=None, njobs=1, distance=co
     item_file = '{}.item'.format(data_file)
     feature_file = '{}.features'.format(data_file)
     distance_file = '{}.distance'.format(data_file)
-    scorefilename = '{}.score'.format(data_file)
-    taskfilename = '{}.abx'.format(data_file)
-    analyzefilename = '{}.csv'.format(data_file)
-    remove_files = [distance_file, scorefilename, taskfilename, analyzefilename]
+    score_file = '{}.score'.format(data_file)
+    task_file = '{}.abx'.format(data_file)
+    analyze_file = '{}.csv'.format(data_file)
+    remove_files = [distance_file, score_file, task_file, analyze_file]
     remove_files += [item_file, feature_file]
     map(os.remove, filter(os.path.exists, remove_files))
 
