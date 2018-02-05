@@ -26,6 +26,7 @@ With conda installed in your system, follow the commands easy_abx package:
 	python setup.py install
 
 # from conda
+        conda config --add channels primatelang
         conda create -n abx
         source activate abx
         conda install -c primatelang easy_abx
