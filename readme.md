@@ -28,7 +28,7 @@ With conda installed in your system, follow the commands easy_abx package:
 # from conda
         conda create -n abx
         source activate abx
-        conda install -c primatelang easy_abxpy
+        conda install -c primatelang easy_abx
 
 
 Running examples
