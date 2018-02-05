@@ -24,7 +24,7 @@ import ABXpy.task
 import ABXpy.distances.distances
 import ABXpy.distances.distances as distances
 import ABXpy.distances.metrics.cosine as cosine
-import ABXpy.distances.metrics.dtw as dtw
+# import ABXpy.distances.metrics.dtw as dtw
 import ABXpy.score as score
 import ABXpy.misc.items as items
 import ABXpy.analyze as analyze
