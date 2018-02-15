@@ -24,7 +24,7 @@ import ABXpy.task
 import ABXpy.distances.distances
 import ABXpy.distances.distances as distances
 import ABXpy.distances.metrics.cosine as cosine
-# import ABXpy.distances.metrics.dtw as dtw
+import ABXpy.distances.metrics.dtw as dtw
 import ABXpy.score as score
 import ABXpy.misc.items as items
 import ABXpy.analyze as analyze
@@ -387,7 +387,7 @@ def run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_dista
     # those scores from the cache. I am checking also if the result file exist,
     # if not it will be created from the data in the cache
 
-    analyze_data =  memorizable_abx(data_file, on, across, by, njobs, tmpdir, distance, abx_id)
+    analyze_data = memorizable_abx(data_file, on, across, by, njobs, tmpdir, distance, abx_id)
     analyze_file = '{}.csv'.format(data_file)
     with open(analyze_file, 'w') as afile:
         afile.write(analyze_data)

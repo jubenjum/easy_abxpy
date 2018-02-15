@@ -16,9 +16,9 @@ echo
 echo "Running articulatory experiment test"
 echo
 prepare_abx "test/items_020_new.csv" articulatory --header \
-     --col_features 7-16 --col_labels 1,4,5,6 --col_items 3,2,1
+     --col_features 8-16 --col_labels 1,4-7 --col_items 3,2,1
 
-run_abx articulatory --on "target-word" --by "place" --across "type"
+run_abx articulatory --on "target-word" --by "place" "position-wd" --across "type"
 
 
 source deactivate
