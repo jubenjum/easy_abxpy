@@ -8,7 +8,8 @@ import string
 import random
 import hashlib
 import os.path
-from collections import namedtuple
+from collections import namedtuple, namedtuple, defaultdict
+from itertools import product, permutations, combinations
 from threading import Lock
 
 from joblib import Memory
@@ -33,6 +34,8 @@ import ABXpy.analyze as analyze
 __all__ = ['create_abx_files', 'parse_ranges']
 __all__ += ['cosine_distance', 'compute_abx']
 __all__ += ['get_cache_dir', 'build_cache']
+__all__ += ['abx_by_on']
+
 
 # Module configuration
 np.random.seed(1)
@@ -393,6 +396,59 @@ def run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_dista
         afile.write(analyze_data)
 
     return analyze_data
+
+
+
+def abx_by_on(features, labels):
+    """Compute ABX scores only for on labels""" 
+
+    labels = [x[0] for x in labels.tolist()]
+    features = features.tolist()
+    features_by_on = defaultdict(lambda: defaultdict(list))
+    features_by_hash = {}
+
+    # to avoid repeated computations and reduce memory I cache features
+    for on, feat in zip(labels, features):
+        on_ = on[0]
+        hash_feat = hash(tuple(feat))
+        features_by_hash[hash_feat] = feat
+        features_by_on[on_][hash_feat].append(feat)
+
+    # precompute distances
+    distances = dict()
+    distance = lambda a, b: scipy.spatial.distance.cosine(a, b)
+    for a, b in permutations(features_by_hash.keys(), 2):
+        dist = distance(features_by_hash[a], features_by_hash[b])
+        distances[(a,b)] = dist
+        distances[(b,a)] = dist
+
+    # compute abx for all triplets ...
+    res_abx = {}
+    f = features_by_on
+    d = distances
+    for a_, b_ in permutations(features_by_on.keys(), 2):
+        if a_ == b_:
+            continue
+        
+        counts, n = 0.0, 0
+        for b, (a, x) in product(features_by_on[b_], combinations(features_by_on[a_], 2)):
+            counts += 0.5 if distances[(a, x)] == distances[(b, x)] else int(d[(a, x)] < distances[(b, x)])
+            counts += 0.5 if distances[(x, a)] == distances[(b, a)] else int(distances[(x, a)] < distances[(b, a)])
+            n += 2
+        
+        res_abx[(b_, a_)]= [counts, n]
+
+    # and print the results
+    for pairs in res_abx.keys():
+        a, b = pairs
+        counts, n = res_abx[pairs] 
+        try:
+            abx = float(counts)/n
+        except ZeroDivisionError:
+            abx = 0.0
+
+        res_line = "{}\t{}\t{:.8f}\t{:d}".format(a, b, abx, n)
+        print(res_line)
 
 
 @memory.cache
