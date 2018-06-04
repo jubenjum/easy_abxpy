@@ -10,7 +10,7 @@ import hashlib
 import os.path
 from collections import namedtuple, namedtuple, defaultdict
 from itertools import product, permutations, combinations
-from threading import Lock
+from itertools import count
 
 from joblib import Memory
 import pandas as pd
@@ -408,9 +408,11 @@ def abx_by_on(features, labels):
     features_by_hash = {}
 
     # to avoid repeated computations and reduce memory I cache features
+    n = count()
     for on, feat in zip(labels, features):
         on_ = on[0]
-        hash_feat = hash(tuple(feat))
+        # I join the hash with a number to track features that are similar (hash) ...
+        hash_feat = "{}-{}".format(hash(tuple(feat)), n.next())
         features_by_hash[hash_feat] = feat
         features_by_on[on_][hash_feat].append(feat)
 
@@ -421,6 +423,8 @@ def abx_by_on(features, labels):
         dist = distance(features_by_hash[a], features_by_hash[b])
         distances[(a,b)] = dist
         distances[(b,a)] = dist
+    for k in features_by_hash.keys():
+        distances[(k, k)] = distance(features_by_hash[a], features_by_hash[b])
 
     # compute abx for all triplets ...
     res_abx = {}
