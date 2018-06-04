@@ -402,7 +402,7 @@ def run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_dista
 def abx_by_on(features, labels):
     """Compute ABX scores only for on labels""" 
 
-    labels = [x[0] for x in labels.tolist()]
+    labels = [x for x in labels.tolist()]
     features = features.tolist()
     features_by_on = defaultdict(lambda: defaultdict(list))
     features_by_hash = {}
