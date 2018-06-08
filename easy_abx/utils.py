@@ -8,6 +8,7 @@ import string
 import random
 import hashlib
 import os.path
+import inspect
 from collections import namedtuple, namedtuple, defaultdict
 from itertools import product, permutations, combinations
 from itertools import count
@@ -320,9 +321,8 @@ def dtw_cosine_distance(x, y, normalized):
     return dtw.dtw(x, y, cosine.cosine_distance, normalized)
 
 
-# FIXME 1 : njobs different than 1 it crashes ABXpy/distance.py
-# FIXED 1 : on a new version of ABXpy/distance.py
-@memory.cache
+# FIXME @memory.cache crash when passing distance from the command line
+#@memory.cache
 def memorizable_abx(data_file, on, across, by, njobs, tmpdir=None,
                     distance=cosine_distance, item_features_hash='0'):
     ''' wrap ABXpy funcions and compute the scores
@@ -338,18 +338,24 @@ def memorizable_abx(data_file, on, across, by, njobs, tmpdir=None,
     analyze_file = '{}.csv'.format(data_file)
 
     # clean up before compute ABX
-    remove_files = [distance_file,
-                    score_file,
-                    task_file,
-                    analyze_file]
+    remove_files = [distance_file, score_file, task_file, analyze_file]
     map(os.remove, filter(os.path.exists, remove_files))
 
     # running the evaluation
     task = ABXpy.task.Task(item_file, on, across=across, by=by, verbose=False)
     task.generate_triplets(task_file, tmpdir=tmpdir)
-    distances.compute_distances(feature_file, '/features/', task_file,
+
+    if not 'normalized' in inspect.getargspec(distance).args:
+        def _distance(x, y, normalized):
+            return distance(x, y)
+        distances.compute_distances(feature_file, '/features/', task_file,
+                                distance_file, _distance, normalized=True,
+                                n_cpu=njobs)
+    else:
+        distances.compute_distances(feature_file, '/features/', task_file,
                                 distance_file, distance, normalized=True,
                                 n_cpu=njobs)
+
     score.score(task_file, distance_file, score_file)
     analyze.analyze(task_file, score_file, analyze_file)
 
@@ -375,6 +381,9 @@ def run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_dista
 
     it should exist two files: {data_file}.features and {data_file}.items
     '''
+
+    if not distance:
+        distance = cosine_distance
 
     # the checksum is used find diff data within the same same file name ...
     item_file = '{}.item'.format(data_file)
