@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 """
-prepare_abx: prepare the abx files to compute ABX score.
+prepare_abx: prepare the abx files to compute ABX score using:
+
+https://github.com/bootphon/ABXpy
+
 """
 
 import sys

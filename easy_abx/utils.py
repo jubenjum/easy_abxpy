@@ -10,8 +10,7 @@ import hashlib
 import os.path
 import inspect
 from collections import namedtuple, namedtuple, defaultdict
-from itertools import product, permutations, combinations
-from itertools import count
+from itertools import product, permutations, combinations, count
 
 from joblib import Memory
 import pandas as pd
@@ -39,7 +38,8 @@ __all__ += ['abx_by_on']
 
 
 # Module configuration
-np.random.seed(1)
+np.random.seed(1) # initialize seed for reproductibility
+
 package_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 if not(package_path in sys.path):
     sys.path.append(package_path)
@@ -47,9 +47,13 @@ if not(package_path in sys.path):
 
 # creating a global cache to store intermediate resutls
 def get_cache_dir():
-    ''' get the directory where the cache is stored, by default it will create a
-    directory ".cache" in the current directory
-    '''
+    """
+    `get_cache_dir` function gives the directory where the cache is stored, 
+    the name of the cache directory is ".cache/" and it's keep in the directory 
+    where the script was called. 
+    
+    If ".cache" doesn't exist, this function will create it.
+    """
     cdir = os.curdir+'/.cache'
     if not os.path.exists(cdir):
         os.makedirs(cdir)
@@ -57,9 +61,11 @@ def get_cache_dir():
 
 
 def build_cache():
+    """ `build_cache` is a shortcut for joblib.Memory function """
     return Memory(cachedir=get_cache_dir(), verbose=0)
 
 
+# intializing cache
 memory = build_cache()
 
 
@@ -138,6 +144,7 @@ def memerized_create_abx_files(df, set_header, col_items, col_coords,
     group.attrs['version'] = '1.1'
     group.attrs['format'] = 'dense'
 
+    # minimum set of variables used by ABXpy
     group.create_dataset("/features/features/", data=features)
     group.create_dataset("/features/index/", data=index)
     group.create_dataset("/features/items/", data=joined_items)
@@ -269,13 +276,11 @@ def parse_ranges(text):
     return selected_ranges
 
 
-def one2zero(a):
-    """removes one to  """
-    return list(np.array() - 1)
-
-
-# from https://goo.gl/REx446
 def __id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    """
+    Random string generation with upper case letters and digits in Python
+    from https://goo.gl/REx446 
+    """
     return ''.join(random.choice(chars) for _ in range(size))
 
 
@@ -289,6 +294,10 @@ class Modified_Features_Accessor(ABXpy.distances.distances.Features_Accessor):
         self.features = features
 
     def get_features_from_raw(self, items):
+        """get_features_from_raw data override
+        override ABXpy.distances.distances.Features_Accessor.get_features_from_raw
+        removing the use of the times in the items/features file
+        """
         features = {}
         for ix, f, on, off in zip(items.index, items['file'],
                                   items['onset'], items['offset']):
@@ -323,15 +332,55 @@ def dtw_cosine_distance(x, y, normalized):
 
 # FIXME @memory.cache crash when passing distance from the command line
 #@memory.cache
-def memorizable_abx(data_file, on, across, by, njobs, tmpdir=None,
+def memorizable_abx(data_file, on, across, by, njobs=1, tmpdir=None,
                     distance=cosine_distance, item_features_hash='0'):
-    ''' wrap ABXpy funcions and compute the scores
+    '''
+    Wrap ABXpy functions and compute the scores, this is the memorized (cached) 
+
+
+    Parameters
+    ----------
+
+    data_file : [string]
+        name of the item and features files without the extensionn
+        these files should exist, and the name of the 
+        files are : `{data_file}.features` and `{data_file}.items`
+
+    on : [string]
+        the name of the column containing the ON data. It must be 
+        exist in featrues and items files
+
+    across : [list]
+        a list that contain the ACROSS column names, the elements of the 
+        list are strings and need to be present on the  `{data_file}.features` 
+        and `{data_file}.items`, it can be empty if this task is not 
+        computed
+
+    by : [list]
+        a list that contains the BY column names as strings, the names
+        must be present in the features and items files or be empty if
+        BY task is not been computed
+
+    njobs : [int, default: 1]
+        number of jobs passed to joblib to compute ABX 
+
+    tmpdir : [string, default:None] 
+
+    distance : [function, default: cosine_distance]
+
+    item_features_hash  [string, default:'0']
+    
+    Returns
+    -------
+    String with a the ABX results, the result is a csv string with 
+    multiple lines (separated by \\n) and fields separated by tabs (\\t)
     '''
     item_file = '{}.item'.format(data_file)
     feature_file = '{}.features'.format(data_file)
     if not os.path.isfile(item_file) or not os.path.isfile(feature_file):
         raise ValueError('item_file or feature_file doesnt exist')
 
+    # name of output files
     distance_file = '{}.distance'.format(data_file)
     score_file = '{}.score'.format(data_file)
     task_file = '{}.abx'.format(data_file)
@@ -345,15 +394,14 @@ def memorizable_abx(data_file, on, across, by, njobs, tmpdir=None,
     task = ABXpy.task.Task(item_file, on, across=across, by=by, verbose=False)
     task.generate_triplets(task_file, tmpdir=tmpdir)
 
+    # distance 
     if not 'normalized' in inspect.getargspec(distance).args:
         def _distance(x, y, normalized):
             return distance(x, y)
-        distances.compute_distances(feature_file, '/features/', task_file,
-                                distance_file, _distance, normalized=True,
-                                n_cpu=njobs)
     else:
-        distances.compute_distances(feature_file, '/features/', task_file,
-                                distance_file, distance, normalized=True,
+        _distance = distance
+    distances.compute_distances(feature_file, '/features/', task_file,
+                                distance_file, _distance, normalized=True,
                                 n_cpu=njobs)
 
     score.score(task_file, distance_file, score_file)
@@ -369,6 +417,20 @@ def memorizable_abx(data_file, on, across, by, njobs, tmpdir=None,
 
 # https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
 def md5(fname):
+    """`md5` function compute md5sum of a file, the objective is to 
+    make include the checksum of the functions/data and recompute the cache is 
+    these values changed
+
+    Parameters
+    ----------
+
+    fname : name of the file that will be used to compute the checksum 
+
+    Returns
+    -------
+    String with a checksum of the function/data 
+
+    """
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -376,10 +438,58 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 
-def run_abx(data_file, on, across, by, njobs, tmpdir=None, distance=cosine_distance):
-    '''ABXpy funcions and compute the scores
+def run_abx(data_file, on, across, by, njobs=1, tmpdir=None, distance=cosine_distance):
+    '''`run_abx` wraps ABXpy package, it returnt ABX scores for the tasks on, across and by.
+    it can be run in parallel by passing the number of jobs to joblib package.
 
-    it should exist two files: {data_file}.features and {data_file}.items
+    This function can cache results, allowing to get fast results for the same input data
+    in the features and items files doesn't change (same file checksum/hash)
+    and tasks.
+
+    Parameters
+    ----------
+
+    data_file : [string]
+        name of the item and features files without the extensionn
+        these files should exist, and the name of the 
+        files are : `{data_file}.features` and `{data_file}.items`
+
+    on : [string]
+        the name of the column containing the ON data. It must be 
+        exist in featrues and items files
+
+    across : [list]
+        a list that contain the ACROSS column names, the elements of the 
+        list are strings and need to be present on the  `{data_file}.features` 
+        and `{data_file}.items`, it can be empty if this task is not 
+        computed
+
+    by : [list]
+        a list that contains the BY column names as strings, the names
+        must be present in the features and items files or be empty if
+        BY task is not been computed
+
+    njobs : [int, default: 1]
+        number of jobs passed to joblib to compute ABX 
+
+    tmpdir : [string, default:None] 
+        a temporary directory where preliminary data will be stored
+
+    distance : [function, default: cosine_distance]
+        a distance function to pass ABXpy, it need 3 arguments x, y and
+        normalizer
+
+    item_features_hash  [string, default:'0']
+        it is the checksum of the items file and will be used 
+        to check if the function was aready used with the passed arguments,
+        if it exist a cached version will be used (faster), if not
+        the function will be compute the abx scores and keep track of the
+        checksum
+    
+    Returns
+    -------
+    String with a the ABX results, the result is a csv string with 
+    multiple lines (separated by \\n) and fields separated by tabs (\\t)
     '''
 
     if not distance:
@@ -467,29 +577,43 @@ def abx_by_on(features, labels):
 @memory.cache
 def compute_abx(features, labels, on, across=None, by=None, njobs=1,
                 distance=cosine_distance, tmpdir=None):
-    ''' compute_abx computes the ABX task
+    ''' `compute_abx` computes ABX scores the features and labels. This 
+    function wraps all the ABXpy file creation, abx score computing. It needs as an 
+    input the raw data (features and labels).
+
 
     Parameters
     ----------
 
-    features :
+    features : [list of np.array]
+        numpy arrays that contains the features.  
 
-    labels :
+    labels : [list]
+        a python list containing the labels of the features, mapped one by one
+        in rows with features
 
-    on :
+    on : [int]
+        the column number in features containing the ON labels, not required
+        if the list of labels is given
 
-    across : [default=None]
+    across : [list, default: None]
+        the column numbers containing the ACROSS task in the features data
 
-    by : [default=None]
+    by : [list, default:None]
+        the column numbers containing the BY task in the features data
 
-    njobs : [default=1]
+    njobs : [int, default: 1]
+        number of jobs passed to joblib to compute ABX 
 
-    distance : [default=cosine_distance]
+    distance : [function, default: cosine_distance]
+        a distance function to pass ABXpy, it need 3 arguments x, y and
+        normalizer
+    
 
     Returns
     -------
-    abx_scores
-
+    abx_scores: [pandas DataFrame]
+        A pandas dataframe that contains the ON (pairs), abx scores and number of triplets
     '''
 
     # create intermediate files

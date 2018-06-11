@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 """
-compute_abx_on: compute ABX score using a light version of abx algorithm.
+compute_abx_on: compute ABX scoref or the ON task using a short version 
+of ABX algorithm.
 """
 
 import sys
