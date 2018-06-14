@@ -25,7 +25,14 @@ import ABXpy.task
 import ABXpy.distances.distances
 import ABXpy.distances.distances as distances
 import ABXpy.distances.metrics.cosine as cosine
-import ABXpy.distances.metrics.dtw as dtw
+
+try:
+    # dtw is a cython function and needs to be compiled for
+    # each different OS/libraries
+    import ABXpy.distances.metrics.dtw as dtw
+except ImportError: 
+    pass
+
 import ABXpy.score as score
 import ABXpy.misc.items as items
 import ABXpy.analyze as analyze
@@ -327,7 +334,11 @@ def correlation_distance(x, y, normalized):
 
 
 def dtw_cosine_distance(x, y, normalized):
-    return dtw.dtw(x, y, cosine.cosine_distance, normalized)
+    try:
+        return dtw.dtw(x, y, cosine.cosine_distance, normalized)
+    except:
+        sys.stderr.write("ABXpy.distances.metrics.dtw not supported on this system")
+        sys.exit()
 
 
 # FIXME @memory.cache crash when passing distance from the command line
