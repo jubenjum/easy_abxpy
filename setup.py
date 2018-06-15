@@ -36,7 +36,7 @@ setup(
     entry_points = {'console_scripts': 
          ['prepare_abx = easy_abx.prepare_abx:main', 
           'run_abx = easy_abx.run_abx:main',
-          'compute_abx = easy_abx.compute_abx_on:main']}
+          'compute_abx = easy_abx.compute_abx:main']}
 )
 
 

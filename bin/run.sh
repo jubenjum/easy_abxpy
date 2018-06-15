@@ -19,9 +19,13 @@ set -e
 echo
 echo "Running the calls comparision test"
 echo
-prepare_abx "test/pca.csv" SP4050BM --col_features 2-20 --col_labels 1
+prepare_abx "test/pca.csv" SP4050BM_ABXpy --col_features 2-20 --col_labels 1
 
-run_abx SP4050BM --on "call" --distance "distances/euclidean_distance.py" 
+run_abx SP4050BM_ABXpy --on "call" --distance "distances/euclidean_distance.py" 
+
+# compute abx with for on task with using only python
+compute_abx "test/pca.csv" --col_on 1 --col_features 2-20 \
+    --distance "distances/euclidean_distance.py" > SP4050BM_easyabx.csv
 
 #
 # this second example uses data from an arituculatory experiment, and it uses 
@@ -36,5 +40,4 @@ prepare_abx "test/items_020_new.csv" articulatory --header \
 
 run_abx articulatory --on "target-word" --by "place" "position-wd" --across "type"
 
-
-source deactivate
+#source deactivate

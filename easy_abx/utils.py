@@ -529,7 +529,7 @@ def run_abx(data_file, on, across, by, njobs=1, tmpdir=None, distance=cosine_dis
 
 
 
-def abx_by_on(features, labels):
+def abx_by_on(features, labels, distance=cosine_distance):
     """Compute ABX scores only for on labels""" 
 
     labels = [x for x in labels.tolist()]
@@ -548,7 +548,8 @@ def abx_by_on(features, labels):
 
     # precompute distances
     distances = dict()
-    distance = lambda a, b: scipy.spatial.distance.cosine(a, b)
+    # distance = lambda a, b: scipy.spatial.distance.cosine(a, b)
+    # distance 
     for a, b in permutations(features_by_hash.keys(), 2):
         dist = distance(features_by_hash[a], features_by_hash[b])
         distances[(a,b)] = dist

@@ -10,6 +10,7 @@ https://github.com/bootphon/ABXpy
 """
 
 import sys
+import imp
 
 try:
     # python 3.6
@@ -63,21 +64,20 @@ def main():
     if args.distance:
         distance_file = Path(args.distance)
         if distance_file.is_file():
-            exec(distance_file.read_text())
+            mod = imp.load_source("distance", args.distance) 
+            distance = mod.distance
         else:
             print("ERROR: '{}' doesn't exist".format(args.distance))
             sys.exit()
         if not "distance" in dir():
-            print(dir())
             print("No function 'distance' in file {}".format(args.distance))
             sys.exit()
     else:
-        distance = None
+        distance = euclidean
     
-    run_abx(abx_name, args.on, args.across, args.by, args.njobs, args.tmpdir, distance=distance)
-
+    run_abx(abx_name, args.on, args.across, args.by, args.njobs, 
+            args.tmpdir, distance=distance)
 
 
 if __name__ == '__main__':
     main()
-
