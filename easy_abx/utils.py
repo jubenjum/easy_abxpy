@@ -9,7 +9,7 @@ import random
 import hashlib
 import os.path
 import inspect
-from collections import namedtuple, namedtuple, defaultdict
+from collections import namedtuple, defaultdict
 from itertools import product, permutations, combinations, count
 
 from joblib import Memory
@@ -30,7 +30,7 @@ try:
     # dtw is a cython function and needs to be compiled for
     # each different OS/libraries
     import ABXpy.distances.metrics.dtw as dtw
-except ImportError: 
+except ImportError:
     pass
 
 import ABXpy.score as score
@@ -45,20 +45,16 @@ __all__ += ['abx_by_on']
 
 
 # Module configuration
-np.random.seed(1) # initialize seed for reproductibility
-
-package_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-if not(package_path in sys.path):
-    sys.path.append(package_path)
+np.random.seed(1)  # initialize seed for reproductibility
 
 
 # creating a global cache to store intermediate resutls
 def get_cache_dir():
     """
-    `get_cache_dir` function gives the directory where the cache is stored, 
-    the name of the cache directory is ".cache/" and it's keep in the directory 
-    where the script was called. 
-    
+    `get_cache_dir` function gives the directory where the cache is stored,
+    the name of the cache directory is ".cache/" and it's keep in the directory
+    where the script was called.
+
     If ".cache" doesn't exist, this function will create it.
     """
     cdir = os.curdir+'/.cache'
@@ -140,7 +136,7 @@ def memerized_create_abx_files(df, set_header, col_items, col_coords,
 
     # indexes links the features with the items (items <- indexes -> features)
     # index(es) are linked one to one with item in items, and the number in
-    # the value of index is the first position in the features for the given item
+    # the value of index is the first position in the features the given item
 
     # if features are flat, one row for one item in the index
     index = np.arange(start=0, stop=num_exp)
@@ -286,7 +282,7 @@ def parse_ranges(text):
 def __id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     """
     Random string generation with upper case letters and digits in Python
-    from https://goo.gl/REx446 
+    from https://goo.gl/REx446
     """
     return ''.join(random.choice(chars) for _ in range(size))
 
@@ -301,8 +297,8 @@ class Modified_Features_Accessor(ABXpy.distances.distances.Features_Accessor):
         self.features = features
 
     def get_features_from_raw(self, items):
-        """get_features_from_raw data override
-        override ABXpy.distances.distances.Features_Accessor.get_features_from_raw
+        """get_features_from_raw data override the method get_features_from_raw()
+        from ABXpy.distances.distances.Features_Accessor
         removing the use of the times in the items/features file
         """
         features = {}
@@ -342,11 +338,11 @@ def dtw_cosine_distance(x, y, normalized):
 
 
 # FIXME @memory.cache crash when passing distance from the command line
-#@memory.cache
+@memory.cache
 def memorizable_abx(data_file, on, across, by, njobs=1, tmpdir=None,
                     distance=cosine_distance, item_features_hash='0'):
     '''
-    Wrap ABXpy functions and compute the scores, this is the memorized (cached) 
+    Wrap ABXpy functions and compute the scores, this is the memorized (cached)
 
 
     Parameters
@@ -354,17 +350,17 @@ def memorizable_abx(data_file, on, across, by, njobs=1, tmpdir=None,
 
     data_file : [string]
         name of the item and features files without the extensionn
-        these files should exist, and the name of the 
+        these files should exist, and the name of the
         files are : `{data_file}.features` and `{data_file}.items`
 
     on : [string]
-        the name of the column containing the ON data. It must be 
+        the name of the column containing the ON data. It must be
         exist in featrues and items files
 
     across : [list]
-        a list that contain the ACROSS column names, the elements of the 
-        list are strings and need to be present on the  `{data_file}.features` 
-        and `{data_file}.items`, it can be empty if this task is not 
+        a list that contain the ACROSS column names, the elements of the
+        list are strings and need to be present on the  `{data_file}.features`
+        and `{data_file}.items`, it can be empty if this task is not
         computed
 
     by : [list]
@@ -373,17 +369,17 @@ def memorizable_abx(data_file, on, across, by, njobs=1, tmpdir=None,
         BY task is not been computed
 
     njobs : [int, default: 1]
-        number of jobs passed to joblib to compute ABX 
+        number of jobs passed to joblib to compute ABX
 
-    tmpdir : [string, default:None] 
+    tmpdir : [string, default:None]
 
     distance : [function, default: cosine_distance]
 
     item_features_hash  [string, default:'0']
-    
+
     Returns
     -------
-    String with a the ABX results, the result is a csv string with 
+    String with a the ABX results, the result is a csv string with
     multiple lines (separated by \\n) and fields separated by tabs (\\t)
     '''
     item_file = '{}.item'.format(data_file)
@@ -405,8 +401,8 @@ def memorizable_abx(data_file, on, across, by, njobs=1, tmpdir=None,
     task = ABXpy.task.Task(item_file, on, across=across, by=by, verbose=False)
     task.generate_triplets(task_file, tmpdir=tmpdir)
 
-    # distance 
-    if not 'normalized' in inspect.getargspec(distance).args:
+    # distance
+    if 'normalized' not in inspect.getargspec(distance).args:
         def _distance(x, y, normalized):
             return distance(x, y)
     else:
@@ -428,18 +424,18 @@ def memorizable_abx(data_file, on, across, by, njobs=1, tmpdir=None,
 
 # https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
 def md5(fname):
-    """`md5` function compute md5sum of a file, the objective is to 
-    make include the checksum of the functions/data and recompute the cache is 
+    """`md5` function compute md5sum of a file, the objective is to
+    make include the checksum of the functions/data and recompute the cache is
     these values changed
 
     Parameters
     ----------
 
-    fname : name of the file that will be used to compute the checksum 
+    fname : name of the file that will be used to compute the checksum
 
     Returns
     -------
-    String with a checksum of the function/data 
+    String with a checksum of the function/data
 
     """
     hash_md5 = hashlib.md5()
@@ -462,17 +458,17 @@ def run_abx(data_file, on, across, by, njobs=1, tmpdir=None, distance=cosine_dis
 
     data_file : [string]
         name of the item and features files without the extensionn
-        these files should exist, and the name of the 
+        these files should exist, and the name of the
         files are : `{data_file}.features` and `{data_file}.items`
 
     on : [string]
-        the name of the column containing the ON data. It must be 
+        the name of the column containing the ON data. It must be
         exist in featrues and items files
 
     across : [list]
-        a list that contain the ACROSS column names, the elements of the 
-        list are strings and need to be present on the  `{data_file}.features` 
-        and `{data_file}.items`, it can be empty if this task is not 
+        a list that contain the ACROSS column names, the elements of the
+        list are strings and need to be present on the  `{data_file}.features`
+        and `{data_file}.items`, it can be empty if this task is not
         computed
 
     by : [list]
@@ -481,9 +477,9 @@ def run_abx(data_file, on, across, by, njobs=1, tmpdir=None, distance=cosine_dis
         BY task is not been computed
 
     njobs : [int, default: 1]
-        number of jobs passed to joblib to compute ABX 
+        number of jobs passed to joblib to compute ABX
 
-    tmpdir : [string, default:None] 
+    tmpdir : [string, default:None]
         a temporary directory where preliminary data will be stored
 
     distance : [function, default: cosine_distance]
@@ -491,15 +487,15 @@ def run_abx(data_file, on, across, by, njobs=1, tmpdir=None, distance=cosine_dis
         normalizer
 
     item_features_hash  [string, default:'0']
-        it is the checksum of the items file and will be used 
+        it is the checksum of the items file and will be used
         to check if the function was aready used with the passed arguments,
         if it exist a cached version will be used (faster), if not
         the function will be compute the abx scores and keep track of the
         checksum
-    
+
     Returns
     -------
-    String with a the ABX results, the result is a csv string with 
+    String with a the ABX results, the result is a csv string with
     multiple lines (separated by \\n) and fields separated by tabs (\\t)
     '''
 
@@ -528,9 +524,8 @@ def run_abx(data_file, on, across, by, njobs=1, tmpdir=None, distance=cosine_dis
     return analyze_data
 
 
-
 def abx_by_on(features, labels, distance=cosine_distance):
-    """Compute ABX scores only for on labels""" 
+    """Compute ABX scores only for on labels"""
 
     labels = [x for x in labels.tolist()]
     features = features.tolist()
@@ -549,11 +544,11 @@ def abx_by_on(features, labels, distance=cosine_distance):
     # precompute distances
     distances = dict()
     # distance = lambda a, b: scipy.spatial.distance.cosine(a, b)
-    # distance 
+    # distance
     for a, b in permutations(features_by_hash.keys(), 2):
         dist = distance(features_by_hash[a], features_by_hash[b])
-        distances[(a,b)] = dist
-        distances[(b,a)] = dist
+        distances[(a, b)] = dist
+        distances[(b, a)] = dist
     for k in features_by_hash.keys():
         distances[(k, k)] = distance(features_by_hash[a], features_by_hash[b])
 
@@ -564,19 +559,23 @@ def abx_by_on(features, labels, distance=cosine_distance):
     for a_, b_ in permutations(features_by_on.keys(), 2):
         if a_ == b_:
             continue
-        
+
         counts, n = 0.0, 0
         for b, (a, x) in product(features_by_on[b_], combinations(features_by_on[a_], 2)):
-            counts += 0.5 if distances[(a, x)] == distances[(b, x)] else int(d[(a, x)] < distances[(b, x)])
-            counts += 0.5 if distances[(x, a)] == distances[(b, a)] else int(distances[(x, a)] < distances[(b, a)])
+
+            counts += 0.5 if distances[(a, x)] == distances[(b, x)] \
+                          else int(d[(a, x)] < distances[(b, x)])
+
+            counts += 0.5 if distances[(x, a)] == distances[(b, a)] \
+                          else int(distances[(x, a)] < distances[(b, a)])
             n += 2
-        
-        res_abx[(b_, a_)]= [counts, n]
+
+        res_abx[(b_, a_)] = [counts, n]
 
     # and print the results
     for pairs in res_abx.keys():
         a, b = pairs
-        counts, n = res_abx[pairs] 
+        counts, n = res_abx[pairs]
         try:
             abx = float(counts)/n
         except ZeroDivisionError:
@@ -589,8 +588,8 @@ def abx_by_on(features, labels, distance=cosine_distance):
 @memory.cache
 def compute_abx(features, labels, on, across=None, by=None, njobs=1,
                 distance=cosine_distance, tmpdir=None):
-    ''' `compute_abx` computes ABX scores the features and labels. This 
-    function wraps all the ABXpy file creation, abx score computing. It needs as an 
+    ''' `compute_abx` computes ABX scores the features and labels. This
+    function wraps all the ABXpy file creation, abx score computing. It needs as an
     input the raw data (features and labels).
 
 
@@ -598,7 +597,7 @@ def compute_abx(features, labels, on, across=None, by=None, njobs=1,
     ----------
 
     features : [list of np.array]
-        numpy arrays that contains the features.  
+        numpy arrays that contains the features.
 
     labels : [list]
         a python list containing the labels of the features, mapped one by one
@@ -615,12 +614,12 @@ def compute_abx(features, labels, on, across=None, by=None, njobs=1,
         the column numbers containing the BY task in the features data
 
     njobs : [int, default: 1]
-        number of jobs passed to joblib to compute ABX 
+        number of jobs passed to joblib to compute ABX
 
     distance : [function, default: cosine_distance]
         a distance function to pass ABXpy, it need 3 arguments x, y and
         normalizer
-    
+
 
     Returns
     -------

@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-compute_abx_on: compute ABX scoref or the ON task using a short version 
-of ABX algorithm.
+compute_abx: compute ABX score for ON task using a short version of ABXpy.
 """
 
 import sys
@@ -44,7 +43,7 @@ def main():
     parser.add_argument('--distance', required=False,
                         help=('uses the distnace function defined on the' 
                               ' distance file given on this argument.'
-                              ' default distance function will be '))
+                              ' default distance is euclidean distance'))
 
     parser.add_argument('--header', action='store_true', 
             help='first line in the csv file is a header')
@@ -56,7 +55,9 @@ def main():
     ranges = lambda x: list(np.array(parse_ranges(x))-1)
     col_on = ranges(args.col_on) if args.col_on else None
     col_features = ranges(args.col_features[0]) if args.col_features else None
-    
+   
+    # distance file should contain valid python code as it will be imported, 
+    # and it should be a function "distance(x,y)" that returns a numeric value   
     if args.distance:
         distance_file = Path(args.distance)
         if distance_file.is_file():
@@ -72,6 +73,7 @@ def main():
     else:
         distance = euclidean
 
+    # abx is computed for fix size features and pandas does't allow variable size list
     is_matrix = True
     if args.header:
         try:

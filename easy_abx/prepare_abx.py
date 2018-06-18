@@ -58,6 +58,7 @@ def main():
     options.col_features = ranges(args.col_features[0]) if args.col_features else None
     options.header = args.header
 
+    # abx is computed for fix size features and pandas does't allow variable size list
     is_matrix = True
     if options.header:
         try:

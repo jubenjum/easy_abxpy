@@ -5,6 +5,7 @@ test: easy_abx/utils.py easy_abx/prepare_abx.py easy_abx/run_abx.py
 
 clean:
 	python setup.py clean
+	rm articulatory.* SP4050BM_*
 
 dev:
 	python setup.py develop 
