@@ -16,10 +16,8 @@ The easiest way to have all running is to use
 requirements.
 
 With conda installed in your system, you can install *easy_abx* from the
-source or using conda packages
-
-
-follow the commands easy_abx package:
+source or using conda packages, follow one of the following methods to 
+install easy_abx package:
 
 
 ## Method 1: from source 
@@ -47,8 +45,7 @@ Finally run the installation script:
 ## Method 2: conda
 
 Conda will install all requirements for you, as before you can also create 
-and load a conda virtual environment to keep isolated the package.
-
+and load a conda virtual environment to keep isolated the package.  
 To install the package do:
 
     $ conda install -c primatelang easy_abx
@@ -68,9 +65,9 @@ csv-file contains in the call **labels**, and the rest of columns are the compre
 - *tests/items_020_corr.csv*: from an auditory experiment 
 
 
-The script **bin/run.sh** shows how does the package works.
-
-For more information about how to use the scripts, see their help messages.
+The script **bin/run.sh** runs the pipeline in example datasets and shows does the 
+package and scripts work. For more information about how to use the scripts, 
+see their help messages.
 
 
 # Scripts input parameters
