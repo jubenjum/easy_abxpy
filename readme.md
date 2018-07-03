@@ -67,21 +67,16 @@ of columns are the compressed **features**
 
 The script **bin/run.sh** runs the pipeline in example datasets and shows does the 
 package and scripts work. But essentially you can compute ABX in two ways with this 
-package:
-
-1. By using ABXpy wrappers: using `prepare_abx` and `run_abx`, it will generate 
+package. First by using ABXpy wrappers: using `prepare_abx` and `run_abx`, it will generate 
 all needed [ABXpy files](http://abxpy.readthedocs.io/en/latest/ABXpy.html#the-pipeline)
 and run that pipeline, for the *pca.csv* example:
-
-
 
     $ prepare_abx "test/pca.csv" EXPNAME --col_features 2-21 --col_labels 1
     $ run_abx EXPNAME --on "call"
 
 
-2. computing only [ON task](http://abxpy.readthedocs.io/en/latest/ABXpy.html#ABXpy.task.Task)
+and the second is computing only [ON task](http://abxpy.readthedocs.io/en/latest/ABXpy.html#ABXpy.task.Task)
 with a lightweight ABX implementation, running the same example:
-
 
     $ compute_abx "test/pca.csv" --col_on 1 --col_features 2-21 > EXPNAME_LABX.csv
 
