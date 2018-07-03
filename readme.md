@@ -59,15 +59,29 @@ Two examples are included in the *tests* directory.
 
 - *tests/pca.csv*: an analysis from done for monkeys calls. The data are Mel filter-bank
 spectral features projected to a 20D using Principal Component Analysis (PCA). The 
-csv-file contains in the call **labels**, and the rest of columns are the compressed
-**features** 
+csv-file contains 21 columns, the fist column has the call **labels**, and the rest 
+of columns are the compressed **features** 
   
 - *tests/items_020_corr.csv*: from an auditory experiment 
 
 
 The script **bin/run.sh** runs the pipeline in example datasets and shows does the 
-package and scripts work. For more information about how to use the scripts, 
-see their help messages.
+package and scripts work. But essentially you can compute ABX in two ways with this 
+package:
+
+1. By using ABXpy wrappers: using `prepare_abx` and `run_abx`, it will generate 
+all needed [ABXpy files](http://abxpy.readthedocs.io/en/latest/ABXpy.html#the-pipeline)
+and run that pipeline, for the *pca.csv* example:
+
+    $ prepare_abx "test/pca.csv" EXPNAME --col_features 2-21 --col_labels 1
+    $ run_abx EXPNAME --on "call"
+
+2. computing only [ON task](http://abxpy.readthedocs.io/en/latest/ABXpy.html#ABXpy.task.Task)
+with a lightweight ABX implementation, running the same example:
+
+    $ compute_abx "test/pca.csv" --col_on 1 --col_features 2-21 > EXPNAME_LABX.csv
+
+For more information about how to use the scripts, see their help messages.
 
 
 # Scripts input parameters
